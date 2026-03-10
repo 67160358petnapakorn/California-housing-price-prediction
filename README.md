@@ -1,4 +1,3 @@
-# California-housing-price-prediction
 # 🏡 California Housing Price Prediction
 
 ระบบประเมินราคาบ้านในแคลิฟอร์เนียด้วย Machine Learning  
