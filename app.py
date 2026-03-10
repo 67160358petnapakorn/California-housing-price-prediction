@@ -1,0 +1,260 @@
+# app.py — Streamlit application สำหรับทำนายราคาบ้านในแคลิฟอร์เนีย
+
+import streamlit as st
+import numpy as np
+import pandas as pd
+import joblib
+import json
+
+# ===== การตั้งค่าหน้าเว็บ =====
+# st.set_page_config ต้องเป็น Streamlit command แรกเสมอ
+st.set_page_config(
+    page_title="ระบบทำนายราคาบ้านแคลิฟอร์เนีย",
+    page_icon="🏠",
+    layout="centered",
+    initial_sidebar_state="expanded"
+)
+
+# ===== โหลดโมเดลและข้อมูล =====
+# ใช้ @st.cache_resource เพื่อโหลดโมเดลครั้งเดียว
+# ไม่โหลดซ้ำทุกครั้งที่ผู้ใช้ interact กับ app
+@st.cache_resource
+def load_model():
+    """โหลด pipeline และ metadata — ทำครั้งเดียวตอนเริ่ม app"""
+    pipeline = joblib.load("model_artifacts/housing_pipeline.pkl")
+    with open("model_artifacts/model_metadata.json", "r", encoding="utf-8") as f:
+        metadata = json.load(f)
+    return pipeline, metadata
+
+with st.spinner("กำลังโหลดโมเดล..."):
+    pipeline, metadata = load_model()
+
+# ===== Sidebar: ข้อมูลเกี่ยวกับโมเดล =====
+with st.sidebar:
+    st.header("ℹ️ เกี่ยวกับโมเดลนี้")
+    st.write(f"**ประเภทโมเดล:** {metadata['model_type']}")
+    st.write(f"**R² Score:** {metadata['metrics']['r2']:.4f}")
+    st.write(f"**RMSE:** ${metadata['metrics']['rmse']:,.0f}")
+    st.write(f"**MAE:** ${metadata['metrics']['mae']:,.0f}")
+    st.write(f"**ข้อมูล train:** {metadata['data_stats']['training_samples']:,} ย่าน")
+
+    st.divider()
+
+    # แสดง Feature Importance
+    st.subheader("📊 Feature Importance")
+    importance_data = metadata['feature_importance'][:5]  # top 5
+    for item in importance_data:
+        feat = item['feature'].replace('ocean_', 'ทำเล: ')
+        imp = item['importance']
+        st.write(f"**{feat}**")
+        st.progress(float(imp) / float(importance_data[0]['importance']))
+
+    st.divider()
+
+    # เปรียบเทียบโมเดล
+    st.subheader("🏆 เปรียบเทียบโมเดล")
+    for m in metadata['model_comparison']:
+        st.write(f"**{m['model'].replace(' (Baseline)', '')}**")
+        st.caption(f"RMSE: ${m['test_rmse']:,.0f} | R²: {m['r2']:.3f}")
+
+    st.divider()
+
+    st.subheader("⚠️ ข้อควรระวัง")
+    st.warning(
+        "ผลลัพธ์นี้เป็นการประมาณจาก AI เท่านั้น "
+        "ข้อมูลมาจากสำมะโนประชากรปี 1990 "
+        "กรุณาใช้ประกอบการตัดสินใจเท่านั้น"
+    )
+
+# ===== ส่วนหลัก: Header =====
+st.title("🏠 ระบบประเมินราคาบ้านในแคลิฟอร์เนีย")
+st.markdown("""
+กรอกข้อมูลย่านที่อยู่อาศัยด้านล่าง ระบบจะประเมินราคาบ้านมัธยฐาน
+โดยใช้โมเดล Machine Learning ที่ train จากข้อมูลสำมะโนประชากรแคลิฟอร์เนีย 20,640 ย่าน
+""")
+
+st.divider()
+
+# ===== ส่วนรับ Input =====
+st.subheader("📋 กรอกข้อมูลย่านที่อยู่อาศัย")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    longitude = st.number_input(
+        "ลองจิจูด (Longitude)",
+        min_value=-124.5, max_value=-114.0,
+        value=-119.0, step=0.01, format="%.2f",
+        help="ช่วงแคลิฟอร์เนีย: -124.5 ถึง -114.0 (ยิ่งลบมาก = ยิ่งตะวันตก)"
+    )
+    latitude = st.number_input(
+        "ละติจูด (Latitude)",
+        min_value=32.5, max_value=42.0,
+        value=36.0, step=0.01, format="%.2f",
+        help="ช่วงแคลิฟอร์เนีย: 32.5 ถึง 42.0 (ยิ่งมาก = ยิ่งเหนือ)"
+    )
+    housing_median_age = st.number_input(
+        "อายุมัธยฐานของบ้านในย่าน (ปี)",
+        min_value=1, max_value=52,
+        value=20, step=1,
+        help="อายุเฉลี่ยของบ้านในย่านนั้น"
+    )
+    total_rooms = st.number_input(
+        "จำนวนห้องรวมทั้งหมดในย่าน",
+        min_value=1, max_value=40000,
+        value=2000, step=100,
+        help="รวมทุกห้องของทุกหลังในย่าน"
+    )
+    total_bedrooms = st.number_input(
+        "จำนวนห้องนอนรวมทั้งหมดในย่าน",
+        min_value=1, max_value=7000,
+        value=400, step=10,
+        help="รวมห้องนอนของทุกหลังในย่าน"
+    )
+
+with col2:
+    population = st.number_input(
+        "จำนวนประชากรในย่าน (คน)",
+        min_value=1, max_value=40000,
+        value=1200, step=100,
+        help="จำนวนคนที่อาศัยอยู่ในย่านนั้น"
+    )
+    households = st.number_input(
+        "จำนวนครัวเรือนในย่าน",
+        min_value=1, max_value=7000,
+        value=350, step=10,
+        help="จำนวนบ้าน/หน่วยที่อยู่อาศัยในย่าน"
+    )
+    median_income = st.number_input(
+        "รายได้มัธยฐานของครัวเรือน (หน่วย: หมื่นดอลลาร์)",
+        min_value=0.5, max_value=15.0,
+        value=4.0, step=0.1, format="%.1f",
+        help="เช่น 5.0 = รายได้ $50,000/ปี | ค่าเฉลี่ยทั้ง dataset = 3.87"
+    )
+    ocean_proximity = st.selectbox(
+        "ความใกล้ชิดกับทะเล",
+        options=['<1H OCEAN', 'INLAND', 'NEAR OCEAN', 'NEAR BAY', 'ISLAND'],
+        index=0,
+        help="ระยะห่างจากมหาสมุทร"
+    )
+
+    # แสดงคำอธิบาย ocean_proximity
+    ocean_desc = {
+        '<1H OCEAN': '🌊 ห่างจากทะเลน้อยกว่า 1 ชั่วโมง',
+        'INLAND': '🏔️ อยู่ในแผ่นดิน ห่างไกลจากทะเล',
+        'NEAR OCEAN': '🏖️ ใกล้มหาสมุทรแปซิฟิก',
+        'NEAR BAY': '⛵ ใกล้อ่าวซานฟรานซิสโก',
+        'ISLAND': '🏝️ อยู่บนเกาะ'
+    }
+    st.caption(ocean_desc[ocean_proximity])
+
+st.divider()
+
+# ===== Input Validation =====
+warnings_list = []
+if total_bedrooms > total_rooms:
+    warnings_list.append("⚠️ จำนวนห้องนอนมากกว่าจำนวนห้องรวม — กรุณาตรวจสอบอีกครั้ง")
+if households > total_bedrooms:
+    warnings_list.append("⚠️ จำนวนครัวเรือนมากกว่าจำนวนห้องนอน — ดูผิดปกติ")
+if population < households:
+    warnings_list.append("⚠️ จำนวนประชากรน้อยกว่าจำนวนครัวเรือน — กรุณาตรวจสอบ")
+
+for w in warnings_list:
+    st.warning(w)
+
+# ===== ปุ่มทำนาย =====
+_, btn_col, _ = st.columns([1, 2, 1])
+with btn_col:
+    predict_button = st.button(
+        "🔍 ประเมินราคาบ้าน",
+        use_container_width=True,
+        type="primary",
+        disabled=len(warnings_list) > 0
+    )
+
+# ===== แสดงผลการทำนาย =====
+if predict_button:
+
+    # คำนวณ derived features (เหมือนกับที่ทำใน notebook)
+    rooms_per_household = total_rooms / households
+    bedrooms_ratio = total_bedrooms / total_rooms
+    population_per_household = population / households
+
+    # สร้าง DataFrame ที่มีชื่อ columns ตรงกับที่ train
+    input_data = pd.DataFrame([{
+        'longitude': longitude,
+        'latitude': latitude,
+        'housing_median_age': housing_median_age,
+        'total_rooms': total_rooms,
+        'total_bedrooms': total_bedrooms,
+        'population': population,
+        'households': households,
+        'median_income': median_income,
+        'ocean_proximity': ocean_proximity,
+        'rooms_per_household': rooms_per_household,
+        'bedrooms_ratio': bedrooms_ratio,
+        'population_per_household': population_per_household
+    }])
+
+    # ทำนายด้วย pipeline
+    with st.spinner("กำลังประเมินราคา..."):
+        predicted_price = pipeline.predict(input_data)[0]
+        # clamp ให้อยู่ในช่วงที่สมเหตุสมผล
+        predicted_price = max(10000, min(predicted_price, 600000))
+
+    st.subheader("📊 ผลการประเมินราคา")
+
+    # แสดงราคาหลัก
+    st.success(f"### 💰 ราคาบ้านมัธยฐานที่ประเมินได้\n# ${predicted_price:,.0f}")
+
+    # แสดงช่วงราคา (±1 MAE)
+    mae = metadata['metrics']['mae']
+    low = max(0, predicted_price - mae)
+    high = predicted_price + mae
+
+    col_a, col_b, col_c = st.columns(3)
+    col_a.metric("ราคาต่ำสุด (ประมาณ)", f"${low:,.0f}")
+    col_b.metric("ราคาที่ประเมิน", f"${predicted_price:,.0f}")
+    col_c.metric("ราคาสูงสุด (ประมาณ)", f"${high:,.0f}")
+
+    st.caption(f"ช่วงราคาอ้างอิงจาก MAE ของโมเดล = ±${mae:,.0f}")
+
+    # เปรียบเทียบกับค่าเฉลี่ย dataset
+    avg_price = metadata['data_stats']['target_mean']
+    diff = predicted_price - avg_price
+    diff_pct = (diff / avg_price) * 100
+
+    st.divider()
+    st.write("**📈 เปรียบเทียบกับค่าเฉลี่ยทั้ง Dataset:**")
+    if diff > 0:
+        st.info(f"ราคาที่ประเมินสูงกว่าค่าเฉลี่ย **${avg_price:,.0f}** อยู่ **{diff_pct:.1f}%** (${diff:+,.0f})")
+    else:
+        st.info(f"ราคาที่ประเมินต่ำกว่าค่าเฉลี่ย **${avg_price:,.0f}** อยู่ **{abs(diff_pct):.1f}%** (${diff:+,.0f})")
+
+    # progress bar แสดงระดับราคา
+    st.write("**ระดับราคาเทียบกับราคาสูงสุด ($500,000):**")
+    st.progress(
+        min(float(predicted_price) / 500000, 1.0),
+        text=f"${predicted_price:,.0f} จาก $500,000"
+    )
+
+    # สรุปข้อมูลที่กรอก
+    with st.expander("📋 ดูข้อมูลที่กรอกและ Derived Features"):
+        summary = {
+            "ลองจิจูด": longitude,
+            "ละติจูด": latitude,
+            "อายุบ้านมัธยฐาน (ปี)": housing_median_age,
+            "จำนวนห้องรวม": f"{total_rooms:,}",
+            "จำนวนห้องนอนรวม": f"{total_bedrooms:,}",
+            "จำนวนประชากร": f"{population:,}",
+            "จำนวนครัวเรือน": f"{households:,}",
+            "รายได้มัธยฐาน (หมื่น $)": median_income,
+            "ความใกล้ชิดทะเล": ocean_proximity,
+            "— ห้องต่อครัวเรือน (คำนวณ)": f"{rooms_per_household:.2f}",
+            "— สัดส่วนห้องนอน (คำนวณ)": f"{bedrooms_ratio:.3f}",
+            "— คนต่อครัวเรือน (คำนวณ)": f"{population_per_household:.2f}"
+        }
+        st.dataframe(
+            pd.DataFrame.from_dict(summary, orient="index", columns=["ค่า"]),
+            use_container_width=True
+        )
