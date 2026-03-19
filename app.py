@@ -1,5 +1,5 @@
 # app.py — California Housing Price Prediction
-# Streamlit app with modern UI design
+# Streamlit app with modern UI design (theme-adaptive)
 
 import streamlit as st
 import numpy as np
@@ -27,15 +27,72 @@ st.markdown("""
 
 /* ── Root Variables ── */
 :root {
-    --cream:   #F5F0E8;
-    --sand:    #E8DFD0;
-    --terracotta: #C2714F;
-    --rust:    #A0522D;
-    --forest:  #2C4A3E;
-    --moss:    #4A6741;
-    --ink:     #1A1A2E;
-    --mist:    #8B9BAE;
-    --gold:    #D4A853;
+    --cream:        #F5F0E8;
+    --sand:         #E8DFD0;
+    --terracotta:   #C2714F;
+    --rust:         #A0522D;
+    --forest:       #2C4A3E;
+    --moss:         #4A6741;
+    --ink:          #1A1A2E;
+    --mist:         #8B9BAE;
+    --gold:         #D4A853;
+
+    /* Adaptive tokens — light defaults */
+    --bg-card:      #FFFFFF;
+    --bg-card-sm:   #F5F0E8;
+    --bg-metric:    #F5F0E8;
+    --border-card:  #EAE4DA;
+    --border-sm:    #E0D8CA;
+    --text-heading: #1A1A2E;
+    --text-sub:     #8B9BAE;
+    --text-label:   #4A4A5A;
+    --text-body:    #2A2A3E;
+    --input-bg:     #FDFAF6;
+    --input-text:   #1A1A2E;
+    --feat-bg:      #EAE4DA;
+    --pill-bg:      #F5F0E8;
+    --pill-border:  #DDD6C8;
+    --pill-text:    #5A5A6A;
+}
+
+/* ── Dark Mode Overrides ── */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-card:      rgba(255,255,255,0.06);
+        --bg-card-sm:   rgba(255,255,255,0.04);
+        --bg-metric:    rgba(255,255,255,0.06);
+        --border-card:  rgba(255,255,255,0.10);
+        --border-sm:    rgba(255,255,255,0.08);
+        --text-heading: #F0EBE0;
+        --text-sub:     rgba(240,235,224,0.55);
+        --text-label:   rgba(240,235,224,0.70);
+        --text-body:    rgba(240,235,224,0.85);
+        --input-bg:     rgba(255,255,255,0.06);
+        --input-text:   #F0EBE0;
+        --feat-bg:      rgba(255,255,255,0.08);
+        --pill-bg:      rgba(255,255,255,0.06);
+        --pill-border:  rgba(255,255,255,0.12);
+        --pill-text:    rgba(240,235,224,0.75);
+    }
+}
+
+/* Streamlit dark theme class fallback (Streamlit sets data-theme on html) */
+[data-theme="dark"] {
+    --bg-card:      rgba(255,255,255,0.06);
+    --bg-card-sm:   rgba(255,255,255,0.04);
+    --bg-metric:    rgba(255,255,255,0.06);
+    --border-card:  rgba(255,255,255,0.10);
+    --border-sm:    rgba(255,255,255,0.08);
+    --text-heading: #F0EBE0;
+    --text-sub:     rgba(240,235,224,0.55);
+    --text-label:   rgba(240,235,224,0.70);
+    --text-body:    rgba(240,235,224,0.85);
+    --input-bg:     rgba(255,255,255,0.06);
+    --input-text:   #F0EBE0;
+    --feat-bg:      rgba(255,255,255,0.08);
+    --pill-bg:      rgba(255,255,255,0.06);
+    --pill-border:  rgba(255,255,255,0.12);
+    --pill-text:    rgba(240,235,224,0.75);
 }
 
 /* ── Global Reset ── */
@@ -129,51 +186,51 @@ html, body, [class*="css"] {
     margin-top: 0.3rem;
 }
 
-/* ── Section Heading ── */
+/* ── Section Heading (FIXED: uses adaptive tokens) ── */
 .section-heading {
     font-family: 'DM Serif Display', serif;
     font-size: 1.4rem;
-    color: var(--ink);
+    color: var(--text-heading);   /* was hardcoded var(--ink) */
     margin: 0 0 0.3rem 0;
 }
 .section-sub {
     font-size: 0.85rem;
-    color: var(--mist);
+    color: var(--text-sub);       /* was hardcoded var(--mist) */
     margin: 0 0 1.5rem 0;
 }
 
-/* ── Cards ── */
+/* ── Cards (FIXED: adaptive backgrounds) ── */
 .card {
-    background: #FFFFFF;
-    border: 1px solid #EAE4DA;
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
     border-radius: 16px;
     padding: 1.6rem;
     margin-bottom: 1rem;
 }
 .card-sm {
-    background: var(--cream);
-    border: 1px solid #E0D8CA;
+    background: var(--bg-card-sm);
+    border: 1px solid var(--border-sm);
     border-radius: 12px;
     padding: 1.2rem 1.4rem;
     margin-bottom: 0.75rem;
 }
 
-/* ── Labels for inputs ── */
+/* ── Labels for inputs (FIXED: adaptive color) ── */
 label, .stNumberInput label, .stSelectbox label {
     font-size: 0.82rem !important;
     font-weight: 500 !important;
-    color: #4A4A5A !important;
+    color: var(--text-label) !important;
     letter-spacing: 0.02em !important;
 }
 
-/* ── Input fields ── */
+/* ── Input fields (FIXED: adaptive bg + text) ── */
 .stNumberInput input, .stSelectbox select,
 [data-baseweb="input"] input {
     border-radius: 10px !important;
-    border-color: #DDD6C8 !important;
-    background: #FDFAF6 !important;
-    color: #1A1A2E !important;
-    -webkit-text-fill-color: #1A1A2E !important;
+    border-color: var(--border-card) !important;
+    background: var(--input-bg) !important;
+    color: var(--input-text) !important;
+    -webkit-text-fill-color: var(--input-text) !important;
     font-size: 0.95rem !important;
 }
 .stNumberInput input:focus {
@@ -181,9 +238,9 @@ label, .stNumberInput label, .stSelectbox label {
     box-shadow: 0 0 0 3px rgba(44,74,62,0.1) !important;
 }
 [data-baseweb="base-input"], [data-testid="stNumberInput"] input {
-    background: #FDFAF6 !important;
-    color: #1A1A2E !important;
-    -webkit-text-fill-color: #1A1A2E !important;
+    background: var(--input-bg) !important;
+    color: var(--input-text) !important;
+    -webkit-text-fill-color: var(--input-text) !important;
 }
 
 /* ── Primary Button ── */
@@ -245,7 +302,7 @@ label, .stNumberInput label, .stSelectbox label {
     color: rgba(255,255,255,0.5);
 }
 
-/* ── Metric Boxes ── */
+/* ── Metric Boxes (FIXED: adaptive) ── */
 .metric-row {
     display: flex;
     gap: 1rem;
@@ -253,8 +310,8 @@ label, .stNumberInput label, .stSelectbox label {
 }
 .metric-box {
     flex: 1;
-    background: var(--cream);
-    border: 1px solid #E0D8CA;
+    background: var(--bg-metric);
+    border: 1px solid var(--border-sm);
     border-radius: 12px;
     padding: 1rem;
     text-align: center;
@@ -262,11 +319,11 @@ label, .stNumberInput label, .stSelectbox label {
 .metric-val {
     font-family: 'DM Serif Display', serif;
     font-size: 1.5rem;
-    color: var(--ink);
+    color: var(--text-heading);   /* FIXED: was hardcoded var(--ink) */
 }
 .metric-lbl {
     font-size: 0.72rem;
-    color: var(--mist);
+    color: var(--text-sub);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     margin-top: 0.2rem;
@@ -274,7 +331,7 @@ label, .stNumberInput label, .stSelectbox label {
 
 /* ── Comparison Bar ── */
 .compare-bar-wrap {
-    background: #EAE4DA;
+    background: var(--feat-bg);
     border-radius: 100px;
     height: 8px;
     margin: 0.4rem 0 1rem 0;
@@ -294,15 +351,15 @@ label, .stNumberInput label, .stSelectbox label {
 
 /* ── Divider ── */
 hr {
-    border-color: #EAE4DA !important;
+    border-color: var(--border-card) !important;
     margin: 2rem 0 !important;
 }
 
 /* ── Expander ── */
 .streamlit-expanderHeader {
     font-size: 0.85rem !important;
-    color: var(--mist) !important;
-    background: var(--cream) !important;
+    color: var(--text-sub) !important;
+    background: var(--bg-card-sm) !important;
     border-radius: 10px !important;
 }
 
@@ -311,39 +368,61 @@ hr {
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    background: rgba(44,74,62,0.08);
+    background: rgba(44,74,62,0.12);
     color: var(--forest);
-    border: 1px solid rgba(44,74,62,0.15);
+    border: 1px solid rgba(44,74,62,0.2);
     border-radius: 100px;
     font-size: 0.8rem;
     font-weight: 500;
     padding: 0.3rem 0.8rem;
     margin-top: 0.5rem;
 }
+@media (prefers-color-scheme: dark) {
+    .ocean-badge {
+        background: rgba(74,103,65,0.25);
+        color: #90C080;
+        border-color: rgba(74,103,65,0.35);
+    }
+}
+[data-theme="dark"] .ocean-badge {
+    background: rgba(74,103,65,0.25);
+    color: #90C080;
+    border-color: rgba(74,103,65,0.35);
+}
 
-/* ── Model info pills ── */
+/* ── Model info pills (FIXED: adaptive) ── */
 .pill-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
 .pill {
-    background: var(--cream);
-    border: 1px solid #DDD6C8;
+    background: var(--pill-bg);
+    border: 1px solid var(--pill-border);
     border-radius: 100px;
     padding: 0.3rem 0.8rem;
     font-size: 0.78rem;
-    color: #5A5A6A;
+    color: var(--pill-text);
     font-weight: 500;
 }
 .pill-green {
-    background: rgba(44,74,62,0.08);
-    border-color: rgba(44,74,62,0.2);
+    background: rgba(44,74,62,0.12);
+    border-color: rgba(44,74,62,0.25);
     color: var(--forest);
 }
+@media (prefers-color-scheme: dark) {
+    .pill-green { background: rgba(74,103,65,0.25); color: #90C080; border-color: rgba(74,103,65,0.35); }
+}
+[data-theme="dark"] .pill-green {
+    background: rgba(74,103,65,0.25); color: #90C080; border-color: rgba(74,103,65,0.35);
+}
 
-/* ── Feature importance bar ── */
+/* ── Feature importance bar (FIXED: adaptive text + bar) ── */
 .feat-row { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.6rem; }
-.feat-name { font-size: 0.78rem; color: #5A5A6A; width: 160px; flex-shrink: 0; }
-.feat-bar-bg { flex: 1; background: #EAE4DA; border-radius: 4px; height: 6px; }
+.feat-name { font-size: 0.78rem; color: var(--text-label); width: 160px; flex-shrink: 0; }
+.feat-bar-bg { flex: 1; background: var(--feat-bg); border-radius: 4px; height: 6px; }
 .feat-bar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--forest), var(--moss)); }
-.feat-pct { font-size: 0.75rem; color: var(--mist); width: 36px; text-align: right; }
+.feat-pct { font-size: 0.75rem; color: var(--text-sub); width: 36px; text-align: right; }
+
+/* ── Disclaimer text in card-sm (FIXED) ── */
+.card-sm p { color: var(--text-sub) !important; }
+.card-sm strong { color: var(--text-label) !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -515,8 +594,8 @@ with right_col:
                 <div class="metric-lbl">MAE</div>
             </div>
         </div>
-        <p style="font-size:0.78rem;color:#8B9BAE;margin:0;">
-        โมเดลอธิบายความแปรปรวนของราคาบ้านได้ <strong>{stats['r2']*100:.1f}%</strong> 
+        <p style="font-size:0.78rem;color:var(--text-sub);margin:0;line-height:1.6;">
+        โมเดลอธิบายความแปรปรวนของราคาบ้านได้ <strong style="color:var(--text-label);">{stats['r2']*100:.1f}%</strong>
         ข้อผิดพลาดเฉลี่ย ±${stats['mae']:,.0f}
         </p>
     </div>
@@ -525,8 +604,6 @@ with right_col:
     st.markdown('<br><p class="section-heading">🎯 Feature Importance</p><p class="section-sub">Features ที่มีอิทธิพลต่อราคาบ้านมากที่สุด</p>', unsafe_allow_html=True)
 
     feat_html = '<div class="card">'
-    top_imp = stats['importance'][:7]
-    max_imp = top_imp[0]['importance']
     feat_labels = {
         'median_income': 'Median Income',
         'latitude': 'Latitude',
@@ -541,7 +618,6 @@ with right_col:
         'total_bedrooms': 'Total Bedrooms',
     }
 
-    # รวม ocean_* categories ทั้งหมดให้เป็น "Ocean Proximity" ก้อนเดียว
     merged = {}
     for item in stats['importance']:
         fname = item['feature']
@@ -566,8 +642,8 @@ with right_col:
 
     st.markdown("""
     <div class="card-sm" style="margin-top:1rem;">
-        <p style="font-size:0.78rem;color:#8B9BAE;margin:0;line-height:1.6;">
-        ⚠️ <strong>Disclaimer</strong><br>
+        <p style="font-size:0.78rem;color:var(--text-sub);margin:0;line-height:1.6;">
+        ⚠️ <strong style="color:var(--text-label);">Disclaimer</strong><br>
         ผลลัพธ์นี้เป็นการประมาณจาก ML เท่านั้น<br>
         ข้อมูลมาจากสำมะโนประชากรแคลิฟอร์เนีย ปี 1990<br>
         ไม่ควรใช้แทนการประเมินราคาจากผู้เชี่ยวชาญ
@@ -623,26 +699,23 @@ if predict_btn:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Comparison vs average
     if diff > 0:
         st.success(f"📈 สูงกว่าค่าเฉลี่ย dataset **${avg_p:,.0f}** อยู่ **{(diff/avg_p)*100:.1f}%** (+${diff:,.0f})")
     else:
         st.info(f"📉 ต่ำกว่าค่าเฉลี่ย dataset **${avg_p:,.0f}** อยู่ **{abs(diff/avg_p)*100:.1f}%** (${diff:,.0f})")
 
-    # Price bar
     st.markdown(f"""
     <div style="margin:0.5rem 0 1.5rem 0;">
-        <div style="font-size:0.78rem;color:#8B9BAE;margin-bottom:0.4rem;">
+        <div style="font-size:0.78rem;color:var(--text-sub);margin-bottom:0.4rem;">
             Price Level vs. Max ($500,000)
         </div>
         <div class="compare-bar-wrap">
             <div class="compare-bar-fill" style="width:{pct_bar*100:.1f}%"></div>
         </div>
-        <div style="font-size:0.75rem;color:#8B9BAE;text-align:right;">${price:,.0f} / $500,000</div>
+        <div style="font-size:0.75rem;color:var(--text-sub);text-align:right;">${price:,.0f} / $500,000</div>
     </div>
     """, unsafe_allow_html=True)
 
-    # Derived features summary
     with st.expander("📋 View Full Input Summary"):
         summary_df = pd.DataFrame({
             'Feature': [
